@@ -18,6 +18,8 @@ const adminRoutes = require('./routes/adminRoutes');
 app.use('/api/admin', adminRoutes);
 const ratingRoutes = require('./routes/ratingRoutes');
 app.use('/api/ratings', ratingRoutes);
+const storeRoutes = require('./routes/storeRoutes');
+app.use('/api/stores', storeRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
