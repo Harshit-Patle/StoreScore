@@ -1,0 +1,58 @@
+
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+const db = require('../db');
+
+const signup = async (req, res) => {
+    const { name, email, password, address } = req.body;
+
+    try {
+        const userExists = await db.query('SELECT * FROM users WHERE email = $1', [email]);
+        if (userExists.rows.length > 0) {
+            return res.status(400).json({ error: 'Email is already registered.' });
+        }
+
+        const salt = await bcrypt.genSalt(10);
+        const passwordHash = await bcrypt.hash(password, salt);
+
+        const newUser = await db.query(
+            `INSERT INTO users (name, email, password_hash, address, role) 
+             VALUES ($1, $2, $3, $4, $5) RETURNING id, name, email, role`,
+            [name, email, passwordHash, address, 'USER']
+        );
+
+        res.status(201).json({ message: 'User created successfully', user: newUser.rows[0] });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).json({ error: 'Server error during signup.' });
+    }
+};
+
+const login = async (req, res) => {
+    const { email, password } = req.body;
+
+    try {
+        const user = await db.query('SELECT * FROM users WHERE email = $1 AND deleted_at IS NULL', [email]);
+        if (user.rows.length === 0) {
+            return res.status(401).json({ error: 'Invalid credentials.' });
+        }
+
+        const validPassword = await bcrypt.compare(password, user.rows[0].password_hash);
+        if (!validPassword) {
+            return res.status(401).json({ error: 'Invalid credentials.' });
+        }
+
+        const token = jwt.sign(
+            { id: user.rows[0].id, role: user.rows[0].role },
+            process.env.JWT_SECRET,
+            { expiresIn: '1d' } 
+        );
+
+        res.json({ token, role: user.rows[0].role, message: 'Logged in successfully' });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).json({ error: 'Server error during login.' });
+    }
+};
+
+module.exports = { signup, login };
