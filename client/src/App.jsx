@@ -2,10 +2,10 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import StoreBrowser from './pages/StoreBrowser';
+import OwnerDashboard from './pages/OwnerDashboard';
 
 // --- Temporary Placeholders ---
 const AdminDashboard = () => <div className="p-10 text-2xl font-bold">Admin Dashboard Coming Soon...</div>;
-const OwnerDashboard = () => <div className="p-10 text-2xl font-bold">Store Owner Dashboard Coming Soon...</div>;
 // -------------------------------------------------------
 
 function App() {
