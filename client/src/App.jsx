@@ -1,12 +1,9 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import AdminDashboard from './pages/AdminDashboard';
 import StoreBrowser from './pages/StoreBrowser';
 import OwnerDashboard from './pages/OwnerDashboard';
-
-// --- Temporary Placeholders ---
-const AdminDashboard = () => <div className="p-10 text-2xl font-bold">Admin Dashboard Coming Soon...</div>;
-// -------------------------------------------------------
 
 function App() {
   return (
@@ -15,7 +12,7 @@ function App() {
 
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
-
+      
       <Route path="/admin" element={<AdminDashboard />} />
       <Route path="/stores" element={<StoreBrowser />} />
       <Route path="/owner-dashboard" element={<OwnerDashboard />} />
