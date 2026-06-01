@@ -1,11 +1,11 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
+import Signup from './pages/Signup';
 
 // --- Temporary Placeholders ---
 const AdminDashboard = () => <div className="p-10 text-2xl font-bold">Admin Dashboard Coming Soon...</div>;
 const StoreBrowser = () => <div className="p-10 text-2xl font-bold">Store Browser Coming Soon...</div>;
 const OwnerDashboard = () => <div className="p-10 text-2xl font-bold">Store Owner Dashboard Coming Soon...</div>;
-const Signup = () => <div className="p-10 text-2xl font-bold">Normal User Signup Coming Soon...</div>;
 // -------------------------------------------------------
 
 function App() {
