@@ -55,4 +55,31 @@ const login = async (req, res) => {
     }
 };
 
-module.exports = { signup, login };
+const updatePassword = async (req, res) => {
+    const userId = req.user.id;
+    const { newPassword } = req.body;
+
+    const passwordRegex = /^(?=.*[A-Z])(?=.*[!@#$%^&*])(?=.{8,16})/;
+    if (!passwordRegex.test(newPassword)) {
+        return res.status(400).json({
+            error: 'Password must be 8-16 characters, with at least one uppercase letter and one special character.'
+        });
+    }
+
+    try {
+        const salt = await bcrypt.genSalt(10);
+        const passwordHash = await bcrypt.hash(newPassword, salt);
+
+        await db.query(
+            'UPDATE users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+            [passwordHash, userId]
+        );
+
+        res.json({ message: 'Password updated successfully.' });
+    } catch (err) {
+        console.error('Password update error:', err);
+        res.status(500).json({ error: 'Failed to update password.' });
+    }
+};
+
+module.exports = { signup, login, updatePassword };

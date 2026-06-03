@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
+import ChangePasswordModal from '../components/ChangePasswordModal';
 
 const StoreBrowser = () => {
     const [stores, setStores] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [loading, setLoading] = useState(true);
+    const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
     const navigate = useNavigate();
 
     const fetchStores = async () => {
@@ -53,12 +55,20 @@ const StoreBrowser = () => {
         <div className="min-h-screen bg-slate-950 text-slate-300 font-sans">
             <nav className="bg-slate-900 border-b border-slate-800 px-6 py-4 flex justify-between items-center sticky top-0 z-10">
                 <h1 className="text-xl font-bold text-white tracking-wide">StoreScore</h1>
-                <button
-                    onClick={handleLogout}
-                    className="text-sm bg-slate-800 hover:bg-slate-700 text-slate-300 py-2 px-4 rounded-md transition-colors border border-slate-700"
-                >
-                    Sign Out
-                </button>
+                <div className="flex space-x-3">
+                    <button
+                        onClick={() => setIsPasswordModalOpen(true)}
+                        className="text-sm bg-slate-800 hover:bg-slate-700 text-slate-300 py-2 px-4 rounded-md transition-colors border border-slate-700"
+                    >
+                        Change Password
+                    </button>
+                    <button
+                        onClick={handleLogout}
+                        className="text-sm bg-slate-800 hover:bg-slate-700 text-slate-300 py-2 px-4 rounded-md transition-colors border border-slate-700"
+                    >
+                        Sign Out
+                    </button>
+                </div>
             </nav>
 
             <main className="max-w-6xl mx-auto px-6 py-8">
@@ -113,6 +123,10 @@ const StoreBrowser = () => {
                     )}
                 </div>
             </main>
+            <ChangePasswordModal
+                isOpen={isPasswordModalOpen}
+                onClose={() => setIsPasswordModalOpen(false)}
+            />
         </div>
     );
 };
