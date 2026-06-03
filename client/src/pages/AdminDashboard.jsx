@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 
@@ -8,6 +8,8 @@ const AdminDashboard = () => {
     const [stores, setStores] = useState([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('users');
+    const [searchTerm, setSearchTerm] = useState('');
+    const [sortConfig, setSortConfig] = useState({ key: 'name', direction: 'asc' });
 
     const navigate = useNavigate();
 
@@ -19,20 +21,15 @@ const AdminDashboard = () => {
                     api.get('/admin/users'),
                     api.get('/admin/stores')
                 ]);
-
                 setStats(statsRes.data);
                 setUsers(usersRes.data);
                 setStores(storesRes.data);
             } catch (err) {
-                console.error(err);
-                if (err.response?.status === 401 || err.response?.status === 403) {
-                    handleLogout();
-                }
+                if (err.response?.status === 401 || err.response?.status === 403) handleLogout();
             } finally {
                 setLoading(false);
             }
         };
-
         fetchDashboardData();
     }, []);
 
@@ -42,9 +39,54 @@ const AdminDashboard = () => {
         navigate('/login');
     };
 
-    if (loading) {
-        return <div className="min-h-screen flex items-center justify-center bg-slate-950 text-indigo-400">Loading Dashboard...</div>;
-    }
+    const handleSort = (key) => {
+        let direction = 'asc';
+        if (sortConfig.key === key && sortConfig.direction === 'asc') direction = 'desc';
+        setSortConfig({ key, direction });
+    };
+
+    const getProcessedData = (data, type) => {
+        let filtered = data.filter(item => {
+            const search = searchTerm.toLowerCase();
+            if (type === 'users') {
+                return item.name.toLowerCase().includes(search) ||
+                    item.email.toLowerCase().includes(search) ||
+                    item.address.toLowerCase().includes(search) ||
+                    item.role.toLowerCase().includes(search);
+            } else {
+                return item.name.toLowerCase().includes(search) ||
+                    item.email.toLowerCase().includes(search) ||
+                    item.address.toLowerCase().includes(search);
+            }
+        });
+
+        filtered.sort((a, b) => {
+            if (a[sortConfig.key] < b[sortConfig.key]) return sortConfig.direction === 'asc' ? -1 : 1;
+            if (a[sortConfig.key] > b[sortConfig.key]) return sortConfig.direction === 'asc' ? 1 : -1;
+            return 0;
+        });
+
+        return filtered;
+    };
+
+    const processedUsers = useMemo(() => getProcessedData(users, 'users'), [users, searchTerm, sortConfig]);
+    const processedStores = useMemo(() => getProcessedData(stores, 'stores'), [stores, searchTerm, sortConfig]);
+
+    const SortableHeader = ({ label, sortKey }) => (
+        <th
+            className="px-6 py-4 font-medium cursor-pointer hover:text-white transition-colors"
+            onClick={() => handleSort(sortKey)}
+        >
+            <div className="flex items-center space-x-1">
+                <span>{label}</span>
+                {sortConfig.key === sortKey && (
+                    <span className="text-indigo-400">{sortConfig.direction === 'asc' ? '↑' : '↓'}</span>
+                )}
+            </div>
+        </th>
+    );
+
+    if (loading) return <div className="min-h-screen flex items-center justify-center bg-slate-950 text-indigo-400">Loading Dashboard...</div>;
 
     return (
         <div className="min-h-screen bg-slate-950 text-slate-300 font-sans">
@@ -74,16 +116,26 @@ const AdminDashboard = () => {
                     </div>
                 </div>
 
+                <div className="mb-6">
+                    <input
+                        type="text"
+                        placeholder={`Search ${activeTab} by name, email, address...`}
+                        className="w-full md:w-1/2 px-4 py-2 bg-slate-900 border border-slate-800 rounded-lg focus:outline-none focus:border-indigo-500 text-white placeholder-slate-500 transition-colors"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
+
                 <div className="flex gap-8 mb-6 border-b border-slate-800 pb-2">
                     <button
                         className={`pb-2 px-1 font-medium transition-colors ${activeTab === 'users' ? 'text-indigo-400 border-b-2 border-indigo-400' : 'text-slate-500 hover:text-slate-300'}`}
-                        onClick={() => setActiveTab('users')}
+                        onClick={() => { setActiveTab('users'); setSearchTerm(''); }}
                     >
                         Manage Users
                     </button>
                     <button
                         className={`pb-2 px-1 font-medium transition-colors ${activeTab === 'stores' ? 'text-indigo-400 border-b-2 border-indigo-400' : 'text-slate-500 hover:text-slate-300'}`}
-                        onClick={() => setActiveTab('stores')}
+                        onClick={() => { setActiveTab('stores'); setSearchTerm(''); }}
                     >
                         Manage Stores
                     </button>
@@ -92,49 +144,53 @@ const AdminDashboard = () => {
                 <div className="bg-slate-900 border border-slate-800 rounded-xl shadow-lg overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="w-full text-left text-sm whitespace-nowrap">
-                            <thead className="bg-slate-950/50 text-slate-400 border-b border-slate-800 uppercase tracking-wider text-xs">
+                            <thead className="bg-slate-950/50 text-slate-400 border-b border-slate-800 uppercase tracking-wider text-xs select-none">
                                 {activeTab === 'users' ? (
                                     <tr>
-                                        <th className="px-6 py-4 font-medium">Name</th>
-                                        <th className="px-6 py-4 font-medium">Email</th>
-                                        <th className="px-6 py-4 font-medium">Role</th>
-                                        <th className="px-6 py-4 font-medium">Address</th>
+                                        <SortableHeader label="Name" sortKey="name" />
+                                        <SortableHeader label="Email" sortKey="email" />
+                                        <SortableHeader label="Role" sortKey="role" />
+                                        <SortableHeader label="Address" sortKey="address" />
+                                        <SortableHeader label="Owner Rating" sortKey="owner_rating" />
                                     </tr>
                                 ) : (
                                     <tr>
-                                        <th className="px-6 py-4 font-medium">Store Name</th>
-                                        <th className="px-6 py-4 font-medium">Email</th>
-                                        <th className="px-6 py-4 font-medium">Address</th>
-                                        <th className="px-6 py-4 font-medium text-right">Avg Rating</th>
+                                        <SortableHeader label="Store Name" sortKey="name" />
+                                        <SortableHeader label="Email" sortKey="email" />
+                                        <SortableHeader label="Address" sortKey="address" />
+                                        <SortableHeader label="Avg Rating" sortKey="average_rating" />
                                     </tr>
                                 )}
                             </thead>
                             <tbody className="divide-y divide-slate-800/50">
-                                {activeTab === 'users' && users.map(user => (
+                                {activeTab === 'users' && processedUsers.map(user => (
                                     <tr key={user.id} className="hover:bg-slate-800/50 transition-colors">
                                         <td className="px-6 py-4 text-white font-medium">{user.name}</td>
                                         <td className="px-6 py-4 text-slate-400">{user.email}</td>
                                         <td className="px-6 py-4">
-                                            <span className={`px-2.5 py-1 text-xs rounded-full font-medium ${user.role === 'ADMIN' ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20' : 'bg-slate-800 text-slate-400 border border-slate-700'}`}>
+                                            <span className={`px-2.5 py-1 text-xs rounded-full font-medium ${user.role === 'ADMIN' ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20' : user.role === 'STORE_OWNER' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-slate-800 text-slate-400 border border-slate-700'}`}>
                                                 {user.role}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-slate-500 truncate max-w-xs">{user.address}</td>
+                                        <td className="px-6 py-4 font-medium text-yellow-400">
+                                            {user.role === 'STORE_OWNER' ? (user.owner_rating > 0 ? `${user.owner_rating} ⭐` : 'New') : '-'}
+                                        </td>
                                     </tr>
                                 ))}
 
-                                {activeTab === 'stores' && stores.map(store => (
+                                {activeTab === 'stores' && processedStores.map(store => (
                                     <tr key={store.id} className="hover:bg-slate-800/50 transition-colors">
                                         <td className="px-6 py-4 text-white font-medium">{store.name}</td>
                                         <td className="px-6 py-4 text-slate-400">{store.email}</td>
                                         <td className="px-6 py-4 text-slate-500 truncate max-w-xs">{store.address}</td>
-                                        <td className="px-6 py-4 font-bold text-right text-indigo-400">{store.average_rating} ⭐</td>
+                                        <td className="px-6 py-4 font-bold text-indigo-400">{store.average_rating > 0 ? `${store.average_rating} ⭐` : 'New'}</td>
                                     </tr>
                                 ))}
 
-                                {(activeTab === 'users' && users.length === 0) || (activeTab === 'stores' && stores.length === 0) ? (
+                                {(activeTab === 'users' && processedUsers.length === 0) || (activeTab === 'stores' && processedStores.length === 0) ? (
                                     <tr>
-                                        <td colSpan="4" className="px-6 py-8 text-center text-slate-500">No data available yet.</td>
+                                        <td colSpan="5" className="px-6 py-8 text-center text-slate-500">No data found matching your search.</td>
                                     </tr>
                                 ) : null}
                             </tbody>

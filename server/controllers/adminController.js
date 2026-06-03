@@ -20,11 +20,20 @@ const getDashboardStats = async (req, res) => {
 
 const getAllUsers = async (req, res) => {
     try {
-        const users = await db.query(
-            'SELECT id, name, email, address, role FROM users WHERE deleted_at IS NULL ORDER BY name ASC'
-        );
+        const query = `
+            SELECT u.id, u.name, u.email, u.address, u.role,
+                   COALESCE(ROUND(AVG(r.rating), 1), 0) as owner_rating
+            FROM users u
+            LEFT JOIN stores s ON u.id = s.owner_id AND u.role = 'STORE_OWNER' AND s.deleted_at IS NULL
+            LEFT JOIN ratings r ON s.id = r.store_id AND r.deleted_at IS NULL
+            WHERE u.deleted_at IS NULL
+            GROUP BY u.id
+            ORDER BY u.name ASC
+        `;
+        const users = await db.query(query);
         res.json(users.rows);
     } catch (err) {
+        console.error(err);
         res.status(500).json({ error: 'Failed to fetch users' });
     }
 };
