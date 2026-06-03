@@ -1,4 +1,5 @@
 
+const bcrypt = require('bcrypt');
 const db = require('../db');
 
 const getDashboardStats = async (req, res) => {
@@ -13,7 +14,6 @@ const getDashboardStats = async (req, res) => {
             totalRatings: parseInt(ratingsCount.rows[0].count)
         });
     } catch (err) {
-        console.error(err);
         res.status(500).json({ error: 'Failed to fetch dashboard stats' });
     }
 };
@@ -33,7 +33,6 @@ const getAllUsers = async (req, res) => {
         const users = await db.query(query);
         res.json(users.rows);
     } catch (err) {
-        console.error(err);
         res.status(500).json({ error: 'Failed to fetch users' });
     }
 };
@@ -56,4 +55,42 @@ const getAllStores = async (req, res) => {
     }
 };
 
-module.exports = { getDashboardStats, getAllUsers, getAllStores };
+const createUser = async (req, res) => {
+    const { name, email, password, address, role } = req.body;
+
+    const passwordRegex = /^(?=.*[A-Z])(?=.*[!@#$%^&*])(?=.{8,16})/;
+    if (!passwordRegex.test(password)) {
+        return res.status(400).json({ error: 'Password must be 8-16 chars, 1 uppercase, 1 special character.' });
+    }
+
+    try {
+        const salt = await bcrypt.genSalt(10);
+        const passwordHash = await bcrypt.hash(password, salt);
+
+        await db.query(
+            `INSERT INTO users (name, email, password_hash, address, role) 
+             VALUES ($1, $2, $3, $4, $5)`,
+            [name, email, passwordHash, address, role]
+        );
+        res.status(201).json({ message: 'User created successfully' });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to create user. Email may already exist.' });
+    }
+};
+
+const createStore = async (req, res) => {
+    const { name, email, address, ownerId } = req.body;
+
+    try {
+        await db.query(
+            `INSERT INTO stores (name, email, address, owner_id) 
+             VALUES ($1, $2, $3, $4)`,
+            [name, email, address, ownerId]
+        );
+        res.status(201).json({ message: 'Store created successfully' });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to create store.' });
+    }
+};
+
+module.exports = { getDashboardStats, getAllUsers, getAllStores, createUser, createStore };

@@ -1,6 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
+import CreateUserModal from '../components/CreateUserModal';
+import CreateStoreModal from '../components/CreateStoreModal';
 
 const AdminDashboard = () => {
     const [stats, setStats] = useState({ totalUsers: 0, totalStores: 0, totalRatings: 0 });
@@ -10,26 +12,12 @@ const AdminDashboard = () => {
     const [activeTab, setActiveTab] = useState('users');
     const [searchTerm, setSearchTerm] = useState('');
     const [sortConfig, setSortConfig] = useState({ key: 'name', direction: 'asc' });
+    const [isUserModalOpen, setIsUserModalOpen] = useState(false);
+    const [isStoreModalOpen, setIsStoreModalOpen] = useState(false);
 
     const navigate = useNavigate();
 
     useEffect(() => {
-        const fetchDashboardData = async () => {
-            try {
-                const [statsRes, usersRes, storesRes] = await Promise.all([
-                    api.get('/admin/stats'),
-                    api.get('/admin/users'),
-                    api.get('/admin/stores')
-                ]);
-                setStats(statsRes.data);
-                setUsers(usersRes.data);
-                setStores(storesRes.data);
-            } catch (err) {
-                if (err.response?.status === 401 || err.response?.status === 403) handleLogout();
-            } finally {
-                setLoading(false);
-            }
-        };
         fetchDashboardData();
     }, []);
 
@@ -37,6 +25,23 @@ const AdminDashboard = () => {
         localStorage.removeItem('token');
         localStorage.removeItem('role');
         navigate('/login');
+    };
+
+    const fetchDashboardData = async () => {
+        try {
+            const [statsRes, usersRes, storesRes] = await Promise.all([
+                api.get('/admin/stats'),
+                api.get('/admin/users'),
+                api.get('/admin/stores')
+            ]);
+            setStats(statsRes.data);
+            setUsers(usersRes.data);
+            setStores(storesRes.data);
+        } catch (err) {
+            if (err.response?.status === 401 || err.response?.status === 403) handleLogout();
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleSort = (key) => {
@@ -126,18 +131,27 @@ const AdminDashboard = () => {
                     />
                 </div>
 
-                <div className="flex gap-8 mb-6 border-b border-slate-800 pb-2">
+                <div className="flex justify-between items-end mb-6 border-b border-slate-800 pb-2">
+                    <div className="flex gap-8">
+                        <button
+                            className={`pb-2 px-1 font-medium transition-colors ${activeTab === 'users' ? 'text-indigo-400 border-b-2 border-indigo-400' : 'text-slate-500 hover:text-slate-300'}`}
+                            onClick={() => { setActiveTab('users'); setSearchTerm(''); }}
+                        >
+                            Manage Users
+                        </button>
+                        <button
+                            className={`pb-2 px-1 font-medium transition-colors ${activeTab === 'stores' ? 'text-indigo-400 border-b-2 border-indigo-400' : 'text-slate-500 hover:text-slate-300'}`}
+                            onClick={() => { setActiveTab('stores'); setSearchTerm(''); }}
+                        >
+                            Manage Stores
+                        </button>
+                    </div>
+
                     <button
-                        className={`pb-2 px-1 font-medium transition-colors ${activeTab === 'users' ? 'text-indigo-400 border-b-2 border-indigo-400' : 'text-slate-500 hover:text-slate-300'}`}
-                        onClick={() => { setActiveTab('users'); setSearchTerm(''); }}
+                        onClick={() => activeTab === 'users' ? setIsUserModalOpen(true) : setIsStoreModalOpen(true)}
+                        className="mb-2 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors"
                     >
-                        Manage Users
-                    </button>
-                    <button
-                        className={`pb-2 px-1 font-medium transition-colors ${activeTab === 'stores' ? 'text-indigo-400 border-b-2 border-indigo-400' : 'text-slate-500 hover:text-slate-300'}`}
-                        onClick={() => { setActiveTab('stores'); setSearchTerm(''); }}
-                    >
-                        Manage Stores
+                        + Add {activeTab === 'users' ? 'User' : 'Store'}
                     </button>
                 </div>
 
@@ -198,6 +212,17 @@ const AdminDashboard = () => {
                     </div>
                 </div>
             </main>
+            <CreateUserModal
+                isOpen={isUserModalOpen}
+                onClose={() => setIsUserModalOpen(false)}
+                onSuccess={fetchDashboardData}
+            />
+            <CreateStoreModal
+                isOpen={isStoreModalOpen}
+                onClose={() => setIsStoreModalOpen(false)}
+                onSuccess={fetchDashboardData}
+                owners={users.filter(u => u.role === 'STORE_OWNER')}
+            />
         </div>
     );
 };
