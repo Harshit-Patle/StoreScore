@@ -19,10 +19,17 @@ const verifyToken = (req, res, next) => {
 };
 
 const isAdmin = (req, res, next) => {
-    if (req.user.role !== 'ADMIN') {
+    if (!req.user || req.user.role !== 'ADMIN') {
         return res.status(403).json({ error: 'Forbidden. Admin access required.' });
     }
     next();
 };
 
-module.exports = { verifyToken, isAdmin };
+const isOwner = (req, res, next) => {
+    if (!req.user || req.user.role !== 'STORE_OWNER') {
+        return res.status(403).json({ error: 'Forbidden. Store Owner access required.' });
+    }
+    next();
+};
+
+module.exports = { verifyToken, isAdmin, isOwner };
