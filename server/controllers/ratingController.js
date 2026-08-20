@@ -1,12 +1,16 @@
-
 const db = require('../db');
 
-const submitRating = async (req, res) => {
+const submitRating = async (req, res, next) => {
     const { storeId, rating } = req.body;
     const userId = req.user.id;
 
-    if (!rating || rating < 1 || rating > 5) {
+    const parsedRating = Number(rating);
+    if (!Number.isInteger(parsedRating) || parsedRating < 1 || parsedRating > 5) {
         return res.status(400).json({ error: 'Rating must be an integer between 1 and 5.' });
+    }
+
+    if (!storeId || isNaN(Number(storeId))) {
+        return res.status(400).json({ error: 'Valid numeric storeId is required.' });
     }
 
     try {
@@ -23,19 +27,18 @@ const submitRating = async (req, res) => {
         if (existingRating.rows.length > 0) {
             await db.query(
                 'UPDATE ratings SET rating = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
-                [rating, existingRating.rows[0].id]
+                [parsedRating, existingRating.rows[0].id]
             );
             return res.json({ message: 'Rating updated successfully.' });
         } else {
             await db.query(
                 'INSERT INTO ratings (user_id, store_id, rating) VALUES ($1, $2, $3)',
-                [userId, storeId, rating]
+                [userId, storeId, parsedRating]
             );
             return res.status(201).json({ message: 'Rating submitted successfully.' });
         }
     } catch (err) {
-        console.error('Rating Error:', err);
-        res.status(500).json({ error: 'Failed to process rating.' });
+        next(err);
     }
 };
 
