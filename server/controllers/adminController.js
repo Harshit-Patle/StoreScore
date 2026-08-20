@@ -57,8 +57,9 @@ const getAllStores = async (req, res) => {
 
 const createUser = async (req, res) => {
     const { name, email, password, address, role } = req.body;
+    const normalizedEmail = email ? email.trim().toLowerCase() : '';
 
-    const passwordRegex = /^(?=.*[A-Z])(?=.*[!@#$%^&*])(?=.{8,16})/;
+    const passwordRegex = /^(?=.*[A-Z])(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,16}$/;
     if (!passwordRegex.test(password)) {
         return res.status(400).json({ error: 'Password must be 8-16 chars, 1 uppercase, 1 special character.' });
     }
@@ -70,7 +71,7 @@ const createUser = async (req, res) => {
         await db.query(
             `INSERT INTO users (name, email, password_hash, address, role) 
              VALUES ($1, $2, $3, $4, $5)`,
-            [name, email, passwordHash, address, role]
+            [name, normalizedEmail, passwordHash, address, role]
         );
         res.status(201).json({ message: 'User created successfully' });
     } catch (err) {
@@ -80,12 +81,13 @@ const createUser = async (req, res) => {
 
 const createStore = async (req, res) => {
     const { name, email, address, ownerId } = req.body;
+    const normalizedEmail = email ? email.trim().toLowerCase() : '';
 
     try {
         await db.query(
             `INSERT INTO stores (name, email, address, owner_id) 
              VALUES ($1, $2, $3, $4)`,
-            [name, email, address, ownerId]
+            [name, normalizedEmail, address, ownerId]
         );
         res.status(201).json({ message: 'Store created successfully' });
     } catch (err) {
