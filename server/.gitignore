@@ -7,7 +7,4 @@ logs
 npm-debug.log*
 
 .DS_Store
-Thumbs.db
-
-seed.js
-seedAll.js
+Thumbs.db
