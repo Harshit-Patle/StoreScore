@@ -55,43 +55,59 @@ const getAllStores = async (req, res) => {
     }
 };
 
-const createUser = async (req, res) => {
+const createUser = async (req, res, next) => {
     const { name, email, password, address, role } = req.body;
     const normalizedEmail = email ? email.trim().toLowerCase() : '';
 
-    const passwordRegex = /^(?=.*[A-Z])(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,16}$/;
-    if (!passwordRegex.test(password)) {
-        return res.status(400).json({ error: 'Password must be 8-16 chars, 1 uppercase, 1 special character.' });
-    }
-
     try {
+        const userExists = await db.query(
+            'SELECT id FROM users WHERE email = $1 AND deleted_at IS NULL',
+            [normalizedEmail]
+        );
+        if (userExists.rows.length > 0) {
+            return res.status(409).json({ error: 'A user with this email already exists.' });
+        }
+
         const salt = await bcrypt.genSalt(10);
         const passwordHash = await bcrypt.hash(password, salt);
 
         await db.query(
             `INSERT INTO users (name, email, password_hash, address, role) 
              VALUES ($1, $2, $3, $4, $5)`,
-            [name, normalizedEmail, passwordHash, address, role]
+            [name.trim(), normalizedEmail, passwordHash, address.trim(), role]
         );
         res.status(201).json({ message: 'User created successfully' });
     } catch (err) {
-        res.status(500).json({ error: 'Failed to create user. Email may already exist.' });
+        next(err);
     }
 };
 
-const createStore = async (req, res) => {
+const createStore = async (req, res, next) => {
     const { name, email, address, ownerId } = req.body;
     const normalizedEmail = email ? email.trim().toLowerCase() : '';
 
     try {
+        const ownerCheck = await db.query(
+            'SELECT id, role FROM users WHERE id = $1 AND deleted_at IS NULL',
+            [ownerId]
+        );
+
+        if (ownerCheck.rows.length === 0) {
+            return res.status(404).json({ error: 'Assigned store owner does not exist.' });
+        }
+
+        if (ownerCheck.rows[0].role !== 'STORE_OWNER') {
+            return res.status(400).json({ error: 'Selected user does not have STORE_OWNER role.' });
+        }
+
         await db.query(
             `INSERT INTO stores (name, email, address, owner_id) 
              VALUES ($1, $2, $3, $4)`,
-            [name, normalizedEmail, address, ownerId]
+            [name.trim(), normalizedEmail, address.trim(), ownerId]
         );
         res.status(201).json({ message: 'Store created successfully' });
     } catch (err) {
-        res.status(500).json({ error: 'Failed to create store.' });
+        next(err);
     }
 };
 
