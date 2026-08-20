@@ -24,6 +24,9 @@ app.use('/api/stores', storeRoutes);
 const ownerRoutes = require('./routes/ownerRoutes');
 app.use('/api/owner', ownerRoutes);
 
+const errorHandler = require('./middleware/errorHandler');
+app.use(errorHandler);
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log(`🚀 Server is running on port ${PORT}`);
