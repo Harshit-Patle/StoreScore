@@ -4,6 +4,7 @@ import Signup from './pages/Signup';
 import AdminDashboard from './pages/AdminDashboard';
 import StoreBrowser from './pages/StoreBrowser';
 import OwnerDashboard from './pages/OwnerDashboard';
+import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
   return (
@@ -13,9 +14,32 @@ function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
       
-      <Route path="/admin" element={<AdminDashboard />} />
-      <Route path="/stores" element={<StoreBrowser />} />
-      <Route path="/owner-dashboard" element={<OwnerDashboard />} />
+      <Route
+        path="/admin"
+        element={
+          <ProtectedRoute allowedRoles={['ADMIN']}>
+            <AdminDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/stores"
+        element={
+          <ProtectedRoute allowedRoles={['USER', 'ADMIN', 'STORE_OWNER']}>
+            <StoreBrowser />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/owner-dashboard"
+        element={
+          <ProtectedRoute allowedRoles={['STORE_OWNER']}>
+            <OwnerDashboard />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   );
 }
