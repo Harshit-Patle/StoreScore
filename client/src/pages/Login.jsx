@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+import api from '../utils/api';
 
 const Login = () => {
     const [email, setEmail] = useState('');
@@ -17,7 +17,7 @@ const Login = () => {
         setLoading(true);
 
         try {
-            const response = await axios.post(`${import.meta.env.VITE_API_URL}/auth/login`, {
+            const response = await api.post('/auth/login', {
                 email,
                 password,
             });
@@ -108,9 +108,9 @@ const Login = () => {
                 <div className="mt-6 text-center">
                     <p className="text-sm text-slate-400">
                         Don't have an account?{' '}
-                        <a href="/signup" className="font-medium text-indigo-400 hover:text-indigo-300 transition-colors">
+                        <Link to="/signup" className="font-medium text-indigo-400 hover:text-indigo-300 transition-colors">
                             Sign up as a user
-                        </a>
+                        </Link>
                     </p>
                 </div>
             </div>

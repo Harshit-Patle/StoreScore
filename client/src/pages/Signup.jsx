@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+import api from '../utils/api';
 
 const Signup = () => {
     const [formData, setFormData] = useState({
@@ -25,7 +25,7 @@ const Signup = () => {
         setLoading(true);
 
         try {
-            await axios.post(`${import.meta.env.VITE_API_URL}/auth/signup`, formData);
+            await api.post('/auth/signup', formData);
             navigate('/login');
         } catch (err) {
             setError(err.response?.data?.error || 'Failed to sign up. Please check your inputs.');
@@ -134,9 +134,9 @@ const Signup = () => {
                 <div className="mt-6 text-center">
                     <p className="text-sm text-slate-400">
                         Already have an account?{' '}
-                        <a href="/login" className="font-medium text-indigo-400 hover:text-indigo-300 transition-colors">
+                        <Link to="/login" className="font-medium text-indigo-400 hover:text-indigo-300 transition-colors">
                             Sign in here
-                        </a>
+                        </Link>
                     </p>
                 </div>
             </div>
