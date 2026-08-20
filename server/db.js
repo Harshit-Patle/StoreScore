@@ -1,5 +1,6 @@
+const path = require('path');
 const { Pool } = require('pg');
-require('dotenv').config();
+require('dotenv').config({ path: path.resolve(__dirname, '.env') });
 
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
@@ -8,7 +9,7 @@ const pool = new Pool({
     }
 });
 
-pool.connect()
+pool.query('SELECT NOW()')
     .then(() => console.log('✅ Connected to StoreScore Database'))
     .catch(err => console.error('❌ Database connection error:', err.stack));
 
