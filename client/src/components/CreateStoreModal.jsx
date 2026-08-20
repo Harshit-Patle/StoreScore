@@ -25,7 +25,7 @@ const CreateStoreModal = ({ isOpen, onClose, onSuccess, owners }) => {
                 setStatus({ type: '', message: '' });
             }, 1500);
         } catch (err) {
-            setStatus({ type: 'error', message: 'Failed to create store.' });
+            setStatus({ type: 'error', message: err.response?.data?.error || 'Failed to create store.' });
         } finally {
             setLoading(false);
         }

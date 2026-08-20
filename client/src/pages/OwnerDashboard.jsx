@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 import ChangePasswordModal from '../components/ChangePasswordModal';
@@ -9,6 +9,12 @@ const OwnerDashboard = () => {
     const [error, setError] = useState('');
     const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
     const navigate = useNavigate();
+
+    const handleLogout = useCallback(() => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('role');
+        navigate('/login');
+    }, [navigate]);
 
     useEffect(() => {
         const fetchDashboard = async () => {
@@ -27,13 +33,7 @@ const OwnerDashboard = () => {
         };
 
         fetchDashboard();
-    }, []);
-
-    const handleLogout = () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('role');
-        navigate('/login');
-    };
+    }, [handleLogout]);
 
     if (loading) return <div className="min-h-screen flex items-center justify-center bg-slate-950 text-indigo-400">Loading Dashboard...</div>;
 

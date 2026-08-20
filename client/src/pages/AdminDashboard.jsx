@@ -1,8 +1,22 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 import CreateUserModal from '../components/CreateUserModal';
 import CreateStoreModal from '../components/CreateStoreModal';
+
+const SortableHeader = ({ label, sortKey, sortConfig, onSort }) => (
+    <th
+        className="px-6 py-4 font-medium cursor-pointer hover:text-white transition-colors"
+        onClick={() => onSort(sortKey)}
+    >
+        <div className="flex items-center space-x-1">
+            <span>{label}</span>
+            {sortConfig.key === sortKey && (
+                <span className="text-indigo-400">{sortConfig.direction === 'asc' ? '↑' : '↓'}</span>
+            )}
+        </div>
+    </th>
+);
 
 const AdminDashboard = () => {
     const [stats, setStats] = useState({ totalUsers: 0, totalStores: 0, totalRatings: 0 });
@@ -17,17 +31,13 @@ const AdminDashboard = () => {
 
     const navigate = useNavigate();
 
-    useEffect(() => {
-        fetchDashboardData();
-    }, []);
-
-    const handleLogout = () => {
+    const handleLogout = useCallback(() => {
         localStorage.removeItem('token');
         localStorage.removeItem('role');
         navigate('/login');
-    };
+    }, [navigate]);
 
-    const fetchDashboardData = async () => {
+    const fetchDashboardData = useCallback(async () => {
         try {
             const [statsRes, usersRes, storesRes] = await Promise.all([
                 api.get('/admin/stats'),
@@ -42,7 +52,20 @@ const AdminDashboard = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [handleLogout]);
+
+    useEffect(() => {
+        let isMounted = true;
+        const loadData = async () => {
+            if (isMounted) {
+                await fetchDashboardData();
+            }
+        };
+        loadData();
+        return () => {
+            isMounted = false;
+        };
+    }, [fetchDashboardData]);
 
     const handleSort = (key) => {
         let direction = 'asc';
@@ -50,46 +73,36 @@ const AdminDashboard = () => {
         setSortConfig({ key, direction });
     };
 
-    const getProcessedData = (data, type) => {
-        let filtered = data.filter(item => {
-            const search = searchTerm.toLowerCase();
-            if (type === 'users') {
-                return item.name.toLowerCase().includes(search) ||
-                    item.email.toLowerCase().includes(search) ||
-                    item.address.toLowerCase().includes(search) ||
-                    item.role.toLowerCase().includes(search);
-            } else {
-                return item.name.toLowerCase().includes(search) ||
-                    item.email.toLowerCase().includes(search) ||
-                    item.address.toLowerCase().includes(search);
-            }
-        });
+    const processedUsers = useMemo(() => {
+        const search = searchTerm.toLowerCase();
+        const filtered = users.filter(item =>
+            item.name.toLowerCase().includes(search) ||
+            item.email.toLowerCase().includes(search) ||
+            item.address.toLowerCase().includes(search) ||
+            item.role.toLowerCase().includes(search)
+        );
 
-        filtered.sort((a, b) => {
+        return filtered.sort((a, b) => {
             if (a[sortConfig.key] < b[sortConfig.key]) return sortConfig.direction === 'asc' ? -1 : 1;
             if (a[sortConfig.key] > b[sortConfig.key]) return sortConfig.direction === 'asc' ? 1 : -1;
             return 0;
         });
+    }, [users, searchTerm, sortConfig]);
 
-        return filtered;
-    };
+    const processedStores = useMemo(() => {
+        const search = searchTerm.toLowerCase();
+        const filtered = stores.filter(item =>
+            item.name.toLowerCase().includes(search) ||
+            item.email.toLowerCase().includes(search) ||
+            item.address.toLowerCase().includes(search)
+        );
 
-    const processedUsers = useMemo(() => getProcessedData(users, 'users'), [users, searchTerm, sortConfig]);
-    const processedStores = useMemo(() => getProcessedData(stores, 'stores'), [stores, searchTerm, sortConfig]);
-
-    const SortableHeader = ({ label, sortKey }) => (
-        <th
-            className="px-6 py-4 font-medium cursor-pointer hover:text-white transition-colors"
-            onClick={() => handleSort(sortKey)}
-        >
-            <div className="flex items-center space-x-1">
-                <span>{label}</span>
-                {sortConfig.key === sortKey && (
-                    <span className="text-indigo-400">{sortConfig.direction === 'asc' ? '↑' : '↓'}</span>
-                )}
-            </div>
-        </th>
-    );
+        return filtered.sort((a, b) => {
+            if (a[sortConfig.key] < b[sortConfig.key]) return sortConfig.direction === 'asc' ? -1 : 1;
+            if (a[sortConfig.key] > b[sortConfig.key]) return sortConfig.direction === 'asc' ? 1 : -1;
+            return 0;
+        });
+    }, [stores, searchTerm, sortConfig]);
 
     if (loading) return <div className="min-h-screen flex items-center justify-center bg-slate-950 text-indigo-400">Loading Dashboard...</div>;
 
@@ -161,18 +174,18 @@ const AdminDashboard = () => {
                             <thead className="bg-slate-950/50 text-slate-400 border-b border-slate-800 uppercase tracking-wider text-xs select-none">
                                 {activeTab === 'users' ? (
                                     <tr>
-                                        <SortableHeader label="Name" sortKey="name" />
-                                        <SortableHeader label="Email" sortKey="email" />
-                                        <SortableHeader label="Role" sortKey="role" />
-                                        <SortableHeader label="Address" sortKey="address" />
-                                        <SortableHeader label="Owner Rating" sortKey="owner_rating" />
+                                        <SortableHeader label="Name" sortKey="name" sortConfig={sortConfig} onSort={handleSort} />
+                                        <SortableHeader label="Email" sortKey="email" sortConfig={sortConfig} onSort={handleSort} />
+                                        <SortableHeader label="Role" sortKey="role" sortConfig={sortConfig} onSort={handleSort} />
+                                        <SortableHeader label="Address" sortKey="address" sortConfig={sortConfig} onSort={handleSort} />
+                                        <SortableHeader label="Owner Rating" sortKey="owner_rating" sortConfig={sortConfig} onSort={handleSort} />
                                     </tr>
                                 ) : (
                                     <tr>
-                                        <SortableHeader label="Store Name" sortKey="name" />
-                                        <SortableHeader label="Email" sortKey="email" />
-                                        <SortableHeader label="Address" sortKey="address" />
-                                        <SortableHeader label="Avg Rating" sortKey="average_rating" />
+                                        <SortableHeader label="Store Name" sortKey="name" sortConfig={sortConfig} onSort={handleSort} />
+                                        <SortableHeader label="Email" sortKey="email" sortConfig={sortConfig} onSort={handleSort} />
+                                        <SortableHeader label="Address" sortKey="address" sortConfig={sortConfig} onSort={handleSort} />
+                                        <SortableHeader label="Avg Rating" sortKey="average_rating" sortConfig={sortConfig} onSort={handleSort} />
                                     </tr>
                                 )}
                             </thead>

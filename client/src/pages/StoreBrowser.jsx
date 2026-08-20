@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 import ChangePasswordModal from '../components/ChangePasswordModal';
@@ -10,7 +10,13 @@ const StoreBrowser = () => {
     const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
     const navigate = useNavigate();
 
-    const fetchStores = async () => {
+    const handleLogout = useCallback(() => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('role');
+        navigate('/login');
+    }, [navigate]);
+
+    const fetchStores = useCallback(async () => {
         try {
             const response = await api.get('/stores');
             setStores(response.data);
@@ -19,17 +25,20 @@ const StoreBrowser = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [handleLogout]);
 
     useEffect(() => {
-        fetchStores();
-    }, []);
-
-    const handleLogout = () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('role');
-        navigate('/login');
-    };
+        let isMounted = true;
+        const loadStores = async () => {
+            if (isMounted) {
+                await fetchStores();
+            }
+        };
+        loadStores();
+        return () => {
+            isMounted = false;
+        };
+    }, [fetchStores]);
 
     const handleRating = async (storeId, ratingValue) => {
         try {
@@ -39,7 +48,7 @@ const StoreBrowser = () => {
 
             await api.post('/ratings', { storeId, rating: ratingValue });
             fetchStores();
-        } catch (err) {
+        } catch {
             console.error('Failed to submit rating');
         }
     };
