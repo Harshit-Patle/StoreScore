@@ -9,6 +9,14 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Normalize AWS API Gateway stage prefixes if present
+app.use((req, res, next) => {
+    if (req.url.startsWith('/default')) {
+        req.url = req.url.replace(/^\/default/, '') || '/';
+    }
+    next();
+});
+
 app.get('/', (req, res) => {
     res.json({ message: 'Welcome to the StoreScore API!' });
 });
